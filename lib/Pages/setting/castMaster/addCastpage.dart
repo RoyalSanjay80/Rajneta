@@ -1,10 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:rajneta/Utils/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart'as http;
+import '../../../Utils/api_constants.dart';
 
 class AddCast extends StatefulWidget {
-  const AddCast({super.key});
+  final int userid;
+  final String selectedLanguage;
+  const AddCast({super.key, required this.userid, required this. selectedLanguage});
 
   @override
   State<AddCast> createState() => _AddCastState();
@@ -12,7 +18,94 @@ class AddCast extends StatefulWidget {
 
 class _AddCastState extends State<AddCast> {
   final TextEditingController castController = TextEditingController();
-  final RxList<String> _Cast = <String>[].obs;
+  // final RxList<String> _Cast = <String>[].obs;
+  final RxList<Map<String, dynamic>> _Cast = <Map<String, dynamic>>[].obs;
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
+ Future<void>addCast(String addcast)async{
+    try{
+      SharedPreferences preferences= await SharedPreferences.getInstance();
+      String? token=preferences.getString('auth_token');
+      if(token==null){
+        Get.snackbar('Error', 'User is not Logged in');
+        return;
+      }
+
+      String apiUrl = "${ApiConstants.baseUrl}api/caste-create-by-master";
+       Map<String,String> requestBody={
+         'user_id':widget.userid.toString(),
+         'lang':widget.selectedLanguage.substring(0,2).toLowerCase(),
+       };
+       if(widget.selectedLanguage.toLowerCase().contains('english')){
+         requestBody['caste']=addcast;
+       }else if(widget.selectedLanguage.toLowerCase().contains('marathi')){
+         requestBody['caste_mr']=addcast;
+       }else if(widget.selectedLanguage.toLowerCase().contains('hindi')){
+         requestBody['caste_hi']=addcast;
+       }
+       print('Api URl: $apiUrl');
+       print('Request Body: ${jsonEncode(requestBody)}');
+
+       final responce=await http.post(Uri.parse(apiUrl),
+         headers: {
+         'Authorization':'Bearer $token',
+           'Content-Type': 'application/json',
+         },
+         body: jsonEncode(requestBody),
+       );
+       print('Responce Code ${responce.statusCode}');
+       print('Response Body: ${responce.body}');
+       if(responce.statusCode==200){
+         fetchData();
+         Get.snackbar('Success', 'Address Added successfully!',
+         backgroundColor: Colors.green,colorText: Colors.white
+         );
+         Get.back();
+       } else {
+         try{
+          final responceData=jsonDecode(responce.body);
+          Get.snackbar('error', responceData['message']?? 'faild to addCast');
+         }catch(_){
+           Get.snackbar('error', 'Unexpected server responce');
+         }
+       }
+    }catch(e){
+      print('Error is $e');
+      Get.snackbar('Exception', 'Something wente worng: $e');
+    }
+ }
+ Future<void>fetchData()async{
+    try{
+      SharedPreferences preferences=await SharedPreferences.getInstance();
+      String? token=preferences.getString('auth_token');
+      if(token==null){
+        Get.snackbar('Error', 'User not Logined');
+        return;
+      }
+      String apiUrl='${ApiConstants.baseUrl}api/caste-list-all-masters?lang=${widget.selectedLanguage.substring(0,2).toLowerCase()}&user_id=${widget.userid}';
+      final responce=await http.get(Uri.parse('$apiUrl'),
+        headers: {
+          'Authorization':'Bearer $token',
+          'Content-Type':'application/json',
+        },
+      );
+      final responceData=jsonDecode(responce.body);
+      if(responce.statusCode==200){
+        if(responceData['caste']!=null && responceData['caste']is List){
+          _Cast.assignAll(List<Map<String,dynamic>>.from(responceData['caste']));
+        }else{
+          _Cast.clear();
+        }
+      }else{
+        Get.snackbar('Error', 'Faild to load Data');
+      }
+    }catch(e){
+print(e);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -63,7 +156,7 @@ class _AddCastState extends State<AddCast> {
           ),
           Expanded(
               child: Text(
-                'Add Karyakarta',
+                'Add Cast',
                 style: TextStyle(
                     fontWeight: FontWeight.bold, fontSize: 24, color: Colors.white),
               ))
@@ -93,15 +186,10 @@ class _AddCastState extends State<AddCast> {
                 color: AppColors.secondaryColor,
               ),
               title: Text(
-                _Cast[index],
+                _Cast[index]['caste'],
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              trailing: IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.delete,
-                    color: Colors.red,
-                  )),
+
             ),
           );
         }));
@@ -159,31 +247,8 @@ class _AddCastState extends State<AddCast> {
                   ),
                 ),
                 onPressed: () {
-                  String societyName = castController.text.trim();
-                  if (societyName.isNotEmpty) {
-                    _Cast.add(societyName); // Add to List
-                    castController.clear(); // Clear input
-                    Get.back(); // Close bottom sheet
-                    Get.snackbar(
-                      "Added",
-                      "Cast '$societyName' added successfully!",
-                      backgroundColor: Colors.green,
-                      colorText: Colors.white,
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                  } else {
-                    Get.snackbar(
-                      "Error",
-                      "Please enter a Cast"
-                          ""
-                          ""
-                          ""
-                          " name.",
-                      backgroundColor: Colors.red,
-                      colorText: Colors.white,
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                  }
+                 addCast(castController.text.trim());
+                 Get.back();
                 },
                 child: Text(
                   "Add Cast",

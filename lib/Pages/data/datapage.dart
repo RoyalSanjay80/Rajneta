@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 
 import '../../Utils/colors.dart';
+import 'downloadList.dart';
 
 class DataPage extends StatefulWidget {
   final String selectedLanguage;
@@ -25,7 +26,9 @@ class _DataPageState extends State<DataPage> {
           children: [
             _buildHeader(),
             SizedBox(height: 20,),
-            itemdata(Icons.cloud_download_outlined,"Download List",(){}),
+            itemdata(Icons.cloud_download_outlined,"Download List",(){
+              Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadListScreen( selectedLanguage: widget.selectedLanguage,),));
+            }),
             itemdata(Icons.person,"Photo",(){}),
             itemdata(Icons.system_update_alt,"Update List",(){}),
             itemdata(Icons.backup_table,"Backup All Data",(){}),

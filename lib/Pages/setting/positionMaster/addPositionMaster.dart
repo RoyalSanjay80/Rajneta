@@ -1,20 +1,121 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/snackbar/snackbar.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:rajneta/Utils/api_constants.dart';
 import 'package:rajneta/Utils/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+
 
 class Addposition extends StatefulWidget {
-  const Addposition({super.key});
+  final int userId;
+  final String selectedlanguage;
+  const Addposition(
+      {super.key, required this.userId, required this.selectedlanguage});
 
   @override
   State<Addposition> createState() => _AddpositionState();
 }
 
 class _AddpositionState extends State<Addposition> {
-  final TextEditingController _positionMasterController = TextEditingController();
-  final RxList<String> _position = <String>[].obs;
+  final TextEditingController _positionMasterController =
+      TextEditingController();
+  final RxList<Map<String, dynamic>> _position = <Map<String, dynamic>>[].obs;
+  @override
+  void initState() {
+    super.initState();
+    _fetchkaryakarta();
+  }
+
+  Future<void> addpostion(String addpostion) async {
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      String? token = preferences.getString('auth_token');
+      if (token == null) {
+        Get.snackbar('Message', 'User is Not Login');
+      }
+      String apiUrl = "${ApiConstants.baseUrl}api/position-create-by-master";
+      Map<String, String> requestBody = {
+        'user_id': widget.userId.toString(),
+        'lang': widget.selectedlanguage.substring(0, 2).toLowerCase()
+      };
+      if (widget.selectedlanguage.toLowerCase().contains('english')) {
+        requestBody['position'] = addpostion;
+      } else if (widget.selectedlanguage.toLowerCase().contains('marathi')) {
+        requestBody['position_mr'] = addpostion;
+      } else if (widget.selectedlanguage.toLowerCase().contains('hindi')) {
+        requestBody['position_hi'] = addpostion;
+      }
+      print('API URL $apiUrl');
+      print('Request Body: ${jsonEncode(requestBody)}');
+      final responce = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      );
+      print('Responce Code: ${responce.statusCode}');
+      print('Responce Body: ${responce.body}');
+
+      if (responce.statusCode == 200) {
+        _fetchkaryakarta();
+        Get.snackbar('Success', 'Address added successfully',
+            backgroundColor: Colors.green, colorText: Colors.white);
+        Get.back();
+      } else {
+        try {
+          final responseData = jsonDecode(responce.body);
+          Get.snackbar(
+              'Error', responseData['message'] ?? 'faild to add Postion');
+        } catch (e) {
+          Get.snackbar('Error', 'Unexpected server response');
+        }
+      }
+    } catch (e) {
+      print('Error is $e');
+    }
+  }
+
+  Future<void> _fetchkaryakarta() async {
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      String? token = preferences.getString('auth_token');
+      if (token == null) {
+        Get.snackbar('Error', 'User not Logined');
+        return;
+      }
+      String apiUrl =
+          "${ApiConstants.baseUrl}api/position-list-all-masters?lang=${widget.selectedlanguage.substring(0, 2).toLowerCase()}&user_id=${widget.userId}";
+
+      final responce = await http.get(
+        Uri.parse('$apiUrl'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      final responceData = jsonDecode(responce.body);
+      if (responce.statusCode == 200) {
+        if (responceData['position'] != null &&
+            responceData['position'] is List) {
+          _position.assignAll(
+              List<Map<String, dynamic>>.from(responceData['position']));
+        } else {
+          _position.clear();
+        }
+      } else {
+        Get.snackbar('Error', responceData['message'] ?? 'Faild to load data',
+            backgroundColor: Colors.red);
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -22,18 +123,22 @@ class _AddpositionState extends State<Addposition> {
         body: Column(
           children: [
             _buildHeader(),
-            SizedBox(height: 10,),
+            SizedBox(
+              height: 10,
+            ),
             Expanded(child: _buildPosition())
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          backgroundColor: AppColors.secondaryColor,
-          child: Icon(Icons.add,color: AppColors.backgroundColor,),
-            onPressed: (){
+            backgroundColor: AppColors.secondaryColor,
+            child: Icon(
+              Icons.add,
+              color: AppColors.backgroundColor,
+            ),
+            onPressed: () {
               _showBottomSheet(context);
-        }),
+            }),
       ),
-      
     );
   }
 
@@ -51,7 +156,9 @@ class _AddpositionState extends State<Addposition> {
       child: Row(
         children: [
           IconButton(
-              onPressed: () {},
+              onPressed: () {
+                Get.back();
+              },
               icon: Icon(
                 Icons.arrow_back_rounded,
                 color: Colors.white,
@@ -69,6 +176,7 @@ class _AddpositionState extends State<Addposition> {
       ),
     );
   }
+
   void _showBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -107,7 +215,8 @@ class _AddpositionState extends State<Addposition> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.secondaryColor, width: 2),
+                    borderSide:
+                        BorderSide(color: AppColors.secondaryColor, width: 2),
                   ),
                 ),
               ),
@@ -122,34 +231,15 @@ class _AddpositionState extends State<Addposition> {
                 ),
                 onPressed: () {
                   String societyName = _positionMasterController.text.trim();
-                  if (societyName.isNotEmpty) {
-                    _position.add(societyName); // Add to List
-                    _positionMasterController.clear(); // Clear input
-                    Get.back(); // Close bottom sheet
-                    Get.snackbar(
-                      "Added",
-                      "Position '$societyName' added successfully!",
-                      backgroundColor: Colors.green,
-                      colorText: Colors.white,
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                  } else {
-                    Get.snackbar(
-                      "Error",
-                      "Please enter a position"
-                          ""
-                          ""
-                          ""
-                          " name.",
-                      backgroundColor: Colors.red,
-                      colorText: Colors.white,
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                  }
+                  addpostion(societyName);
+                  Get.back();
                 },
                 child: Text(
                   "Add Position",
-                  style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
               SizedBox(height: 10),
@@ -159,40 +249,33 @@ class _AddpositionState extends State<Addposition> {
       },
     );
   }
-  Widget _buildPosition(){
-    return Obx(()=>_position.isEmpty
-    ? Center(
-      child: Text('No Position yet',style: TextStyle(
-        fontSize: 16,color: Colors.grey
-      ),),
-    )
-        : ListView.builder(
-      itemCount: _position.length,
-        itemBuilder: (context,index){
-          return Card(
 
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)
+  Widget _buildPosition() {
+    return Obx(() => _position.isEmpty
+        ? Center(
+            child: Text(
+              'No Position yet',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
-            elevation: 3,
-            child: ListTile(
-              leading: Icon(Icons.home,color: AppColors.secondaryColor,),
-              title: Text(
-                _position[index],
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold
+          )
+        : ListView.builder(
+            itemCount: _position.length,
+            itemBuilder: (context, index) {
+              return Card(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 3,
+                child: ListTile(
+                  leading: Icon(
+                    Icons.home,
+                    color: AppColors.secondaryColor,
+                  ),
+                  title: Text(
+                    _position[index]['position'],
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
-              trailing: IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.delete,
-                    color: Colors.red,
-                  )),
-            ),
-          );
-        })
-    );
+              );
+            }));
   }
 }

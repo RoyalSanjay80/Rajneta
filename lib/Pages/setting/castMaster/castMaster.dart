@@ -174,7 +174,7 @@ class _CastmasterState extends State<Castmaster> {
             _assignPermission(user['id'], value);
           },
           itemBuilder: (context) => [
-            _buildMenuItem('Cast Master', 'cast_master'),
+            _buildMenuItem('Cast Master', 'caste_master'),
           ],
           icon: Icon(Icons.more_vert, color: Colors.grey[700]),
 
@@ -182,7 +182,7 @@ class _CastmasterState extends State<Castmaster> {
         onTap: (){
           // Navigator.push(context, MaterialPageRoute(builder: (context) => Addsocietypage(),));
           if (user['master_permission']?['caste_master'] == 1) {
-            Get.to(() => AddCast());
+            Get.to(() => AddCast(userid:user['id'],selectedLanguage:widget.selectedLanguage));
           } else {
             Get.snackbar(
               "Access Denied",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:oktoast/oktoast.dart';
 import 'Pages/LocalizationService.dart';
 import 'Pages/landingPage.dart';
 import 'Pages/registrationPage.dart';
@@ -7,7 +8,7 @@ import 'Pages/splacePage.dart';
 
 
 void main() {
-  runApp(MyApp());
+  runApp(OKToast(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {

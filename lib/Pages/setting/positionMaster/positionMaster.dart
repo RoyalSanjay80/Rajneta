@@ -189,7 +189,8 @@ class _PositionmasterState extends State<Positionmaster> {
         onTap: (){
           // Navigator.push(context, MaterialPageRoute(builder: (context) => Addkaryakarta(),));
           if (user['master_permission']?['position_master'] == 1) {
-            Get.to(() => Addposition());
+            Get.to(() => Addposition(userId:user['id'],selectedlanguage:widget.selectedLanguage));
+            // Get.to(() => AddCast(userid:user['id'],selectedLanguage:widget.selectedLanguage));
           } else {
             Get.snackbar(
               "Access Denied",

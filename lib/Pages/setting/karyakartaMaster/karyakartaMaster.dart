@@ -187,7 +187,7 @@ class _KaryakartamasterState extends State<Karyakartamaster> {
         onTap: (){
           // Navigator.push(context, MaterialPageRoute(builder: (context) => Addkaryakarta(),));
           if (user['master_permission']?['karyakarta_master'] == 1) {
-            Get.to(() => Addkaryakarta());
+            Get.to(() => Addkaryakarta(userid:user['id'],selectedLanguage:widget.selectedLanguage));
           } else {
             Get.snackbar(
               "Access Denied",

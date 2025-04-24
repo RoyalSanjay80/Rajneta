@@ -67,6 +67,11 @@ dependencies:
   url_launcher: ^6.1.8
   google_fonts: ^6.2.1
   flutter_bluetooth_printer: ^2.17.1
+#  fluttertoast: ^8.2.2
+  oktoast: ^3.3.1
+  restart_app: ^1.1.0
+
+
 
 #  blue_thermal_printer: ^1.2.0
 #  contacts_service: ^0.6.3
