@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:rajneta/Pages/data/photo.dart';
+import 'package:rajneta/Pages/data/updateListPage.dart';
 
 import '../../Utils/colors.dart';
+import 'backupAllData.dart';
 import 'downloadList.dart';
 
 class DataPage extends StatefulWidget {
@@ -29,9 +32,15 @@ class _DataPageState extends State<DataPage> {
             itemdata(Icons.cloud_download_outlined,"Download List",(){
               Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadListScreen( selectedLanguage: widget.selectedLanguage,),));
             }),
-            itemdata(Icons.person,"Photo",(){}),
-            itemdata(Icons.system_update_alt,"Update List",(){}),
-            itemdata(Icons.backup_table,"Backup All Data",(){}),
+            itemdata(Icons.person,"Photo",(){
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PhotoScreen(),));
+            }),
+            itemdata(Icons.system_update_alt,"Update List",(){
+              Navigator.push(context, MaterialPageRoute(builder: (context) => Updatelistpage(),));
+            }),
+            itemdata(Icons.backup_table,"Backup All Data",(){
+              Navigator.push(context, MaterialPageRoute(builder: (context) => Backupalldata(),));
+            }),
             itemdata(Icons.restart_alt,"Reset From Backup FIle",(){}),
             itemdata(Icons.backup_table,"Survey  Backup Before Update",(){}),
           ],
